@@ -31,7 +31,16 @@ n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
 n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
 (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init','979352074476790',{},{autoConfig:false});fbq('track','PageView');
+/* Generate/retrieve consistent visitor ID → external_id matching signal */
+var _rId=localStorage.getItem('_rkh_uid');
+if(!_rId){_rId='r'+Date.now().toString(36)+Math.random().toString(36).substr(2,7);localStorage.setItem('_rkh_uid',_rId);}
+/* Capture fbclid from URL if user came from a Facebook ad */
+var _fbc=new URLSearchParams(location.search).get('fbclid');
+var _adv={external_id:_rId};
+if(_fbc) _adv.fbc='fb.1.'+Date.now()+'.'+_fbc;
+fbq('init','979352074476790',_adv);/* advanced matching: external_id + fbc + auto fbp */
+fbq('track','PageView');
+fbq('track','ViewContent');
 </script>
 <noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=979352074476790&ev=PageView&noscript=1"/></noscript>
 <script type="application/ld+json">
@@ -1561,6 +1570,20 @@ window.addEventListener('scroll',function(){
     lastY=y; tick=false;
   });
 },{passive:true});
+
+/* ── META PIXEL — Lead on every WA button tap ─────────
+   useCapture:true = fires BEFORE WA handler, always runs.
+   All buttons (hero, nav, skills, final, bcta) → one Lead.
+   data-wa-src tells which button was tapped (for breakdown).
+──────────────────────────────────────────────────────── */
+document.addEventListener('click',function(e){
+  var btn=e.target.closest&&e.target.closest('[data-wa="1"]');
+  if(!btn||!window.fbq) return;
+  fbq('track','Lead',{
+    content_name:'WhatsApp CTA',
+    content_category:btn.getAttribute('data-wa-src')||'cta'
+  });
+},true);/* true = capture phase — fires before any stopPropagation */
 
 /* ── WHATSAPP FALLBACK ─────────────────────────────────
    Runs when engine.js hasn't loaded (engine.js sets
