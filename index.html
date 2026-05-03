@@ -80,10 +80,13 @@ body{
   overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+}
+/* padding only on mobile where sticky bcta bar floats */
+@media(max-width:839px){
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 }
 img{display:block;max-width:100%;height:auto}
-button{font-family:inherit;border:0;cursor:pointer;background:none;color:inherit}
+button{font-family:inherit;border:0;cursor:pointer;background:none;color:inherit;touch-action:manipulation}
 :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:3px}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{
@@ -159,12 +162,13 @@ nav{
   position:fixed;top:0;left:0;right:0;z-index:50;
   height:60px;padding:0 20px;
   display:flex;justify-content:space-between;align-items:center;
-  transition:background .35s ease,backdrop-filter .35s;
+  transition:background .35s ease,backdrop-filter .35s,border-color .35s ease;
+  border-bottom:1px solid transparent;
 }
+nav.scrolled{border-color:rgba(200,136,42,.12)}
 nav.scrolled{
   background:rgba(250,244,230,.92);
   backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(200,136,42,.12);
 }
 .nav-logo{
   font-family:var(--display);font-size:1.4rem;font-weight:300;
@@ -241,26 +245,26 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   flex:1;
   display:flex;flex-direction:column;justify-content:flex-end;
   padding:60px 6% 44px;
-  /* 60px = nav height. Nothing starts above this. */
+  /* padding-top:60px = nav height. Content zone never starts above nav. */
   max-width:720px;
-  overflow:hidden; /* clip anything that would overflow top */
 }
-/* Hero eyebrow tag */
+/* Hero eyebrow tag — white frosted glass so it's ALWAYS legible on any image */
 .hero-tag{
   display:inline-flex;align-items:center;gap:8px;
   font-family:var(--body);font-size:.7rem;
   letter-spacing:2.8px;text-transform:uppercase;
-  color:var(--gold-lt);font-weight:500;
-  padding:6px 14px;border-radius:999px;
-  border:1px solid rgba(245,216,152,.3);
-  background:rgba(245,216,152,.08);
+  color:#fff;font-weight:500;
+  padding:6px 16px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.28);
+  background:rgba(10,8,4,.40);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   margin-bottom:18px;
   opacity:0;transition:opacity .7s ease .15s;
 }
 .hero-tag.go{opacity:1}
 .hero-tag-dot{
   width:5px;height:5px;border-radius:50%;
-  background:var(--gold-lt);
+  background:var(--candle);/* warm amber dot — warmth accent on white pill */
   animation:tagDot 1.8s ease-in-out infinite;
 }
 @keyframes tagDot{0%,100%{opacity:1}50%{opacity:.35}}
@@ -274,8 +278,17 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   letter-spacing:-.015em;
   color:#fff;
   margin-bottom:20px;
+  /* shadow ensures all 3 lines readable against bright sunset image */
+  text-shadow:0 2px 16px rgba(0,0,0,.45),0 1px 4px rgba(0,0,0,.3);
 }
-.hero-h1 em{font-style:italic;font-weight:400;color:var(--gold-lt)}
+.hero-h1 em{
+  font-style:italic;font-weight:400;
+  color:#fff;
+  /* dark shadow = separation from bright sky. gold glow = warmth stays. */
+  text-shadow:
+    0 2px 12px rgba(0,0,0,.55),
+    0 0  40px rgba(200,136,42,.50);
+}
 /* Each line: overflow hidden → inner span slides up from below */
 .hl{display:block;overflow:hidden;line-height:1.12}
 .hli{
@@ -353,15 +366,17 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   margin-top:10px;font-style:italic;
 }
 
-/* Scroll cue */
+/* Scroll cue — animation starts only AFTER .go so GPU doesn't animate an invisible element */
 .hero-scroll{
   position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
   z-index:4;
   display:flex;flex-direction:column;align-items:center;gap:6px;
   opacity:0;transition:opacity .7s ease 1.3s;
-  animation:scrollBob 2.6s ease-in-out infinite;
 }
-.hero-scroll.go{opacity:1}
+.hero-scroll.go{
+  opacity:1;
+  animation:scrollBob 2.6s ease-in-out 2s infinite;/* 2s delay lets opacity settle first */
+}
 @keyframes scrollBob{
   0%,100%{transform:translateX(-50%) translateY(0)}
   50%{transform:translateX(-50%) translateY(6px)}
@@ -409,6 +424,10 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   font-size:1rem;font-style:italic;
 }
 @keyframes tickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* Pause ticker on hover so user can read items */
+@media(hover:hover){
+  .ticker:hover .ticker-track{animation-play-state:paused}
+}
 
 /* ════════════════════════════════════════════
    SHARED LAYOUT
@@ -480,7 +499,7 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   text-align:center;
 }
 .proof-cell{
-  padding:0 16px;position:relative;
+  padding:0 8px;position:relative;/* reduced from 16px — stops cramping on small phones */
 }
 .proof-cell+.proof-cell::before{
   content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
@@ -488,19 +507,24 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
 }
 .p-num{
   font-family:var(--display);
-  font-size:clamp(2.8rem,6.5vw,4.8rem);
+  /* mobile: 8vw so it scales DOWN on small screens instead of clamping at 2.8rem */
+  font-size:clamp(2rem,8vw,4.8rem);
   font-weight:300;line-height:1;
   color:var(--ink);letter-spacing:-.03em;display:block;
+}
+@media(min-width:520px){
+  .p-num{font-size:clamp(2.8rem,6.5vw,4.8rem)}/* original size on bigger screens */
 }
 .p-num sup{
   font-size:.45em;vertical-align:super;
   letter-spacing:0;color:var(--gold);
 }
 .p-lbl{
-  font-size:.72rem;letter-spacing:2.5px;text-transform:uppercase;
+  font-size:.66rem;letter-spacing:2px;text-transform:uppercase;
   color:var(--ink3);margin-top:7px;display:block;
   font-family:var(--body);font-weight:400;
 }
+@media(min-width:520px){.p-lbl{font-size:.72rem;letter-spacing:2.5px}}
 
 /* ════════════════════════════════════════════
    §4  INTRO — about_moon.jpg (sticky on desktop)
@@ -632,7 +656,7 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   flex:0 0 auto;
   transition:background .2s,border-color .2s;
 }
-.sk-row:hover .sk-arrow{background:var(--ocean);border-color:var(--ocean);color:#fff}
+@media(hover:hover){.sk-row:hover .sk-arrow{background:var(--ocean);border-color:var(--ocean);color:#fff}}
 
 /* ── Desktop pinned skill reveal ── */
 #skillsPin{display:none}
@@ -753,17 +777,19 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   background:#fff;border-radius:14px;
   padding:24px 20px;position:relative;overflow:hidden;
   box-shadow:0 1px 4px rgba(28,20,8,.05),0 6px 20px rgba(28,20,8,.06);
-  transition:transform .35s var(--ease),box-shadow .35s ease;
-  transform-style:preserve-3d;will-change:transform;
+  transition:box-shadow .35s ease;/* transform handled by JS inline style on hover-capable devices only */
 }
 .t-card::after{
   content:'';position:absolute;top:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,var(--gold),transparent);
   opacity:0;transition:opacity .3s;
 }
-/* Desktop hover 3D tilt (JS applies via inline style) */
-.t-card:hover{box-shadow:0 12px 36px rgba(28,20,8,.11)}
-.t-card:hover::after{opacity:1}
+/* 3D tilt + will-change only on devices that support hover (desktop) */
+@media(hover:hover){
+  .t-card{transform-style:preserve-3d;will-change:transform;transition:transform .35s var(--ease),box-shadow .35s ease}
+  .t-card:hover{box-shadow:0 12px 36px rgba(28,20,8,.11)}
+  .t-card:hover::after{opacity:1}
+}
 
 .t-stars{display:flex;gap:2px;margin-bottom:12px}
 .t-stars svg{width:12px;height:12px;fill:var(--gold);color:var(--gold)}
@@ -802,7 +828,7 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   padding:7px 14px;border-radius:999px;
   transition:background .2s,border-color .2s,color .2s;cursor:default;
 }
-.pill:hover{background:var(--gold-glow);border-color:rgba(200,136,42,.3);color:var(--gold)}
+@media(hover:hover){.pill:hover{background:var(--gold-glow);border-color:rgba(200,136,42,.3);color:var(--gold)}}
 
 .stats-wrap{position:relative}
 .stats-img{
@@ -813,21 +839,29 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
 }
 .stats-overlay{
   position:absolute;bottom:0;left:0;right:0;
-  background:linear-gradient(0deg,rgba(28,20,8,.88),transparent);
-  padding:36px 24px 24px;
+  /* Extended gradient — covers BOTH rows of the 2×2 grid. No top row left exposed. */
+  background:linear-gradient(0deg,
+    rgba(10,8,4,.95) 0%,
+    rgba(10,8,4,.88) 38%,
+    rgba(10,8,4,.62) 64%,
+    rgba(10,8,4,.22) 84%,
+    transparent 100%);
+  padding:60px 24px 24px;/* extra top padding pulls dark zone higher */
   border-radius:0 0 16px 16px;
-  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
 }
 .s-num{
   font-family:var(--display);
   font-size:clamp(2rem,4.5vw,2.8rem);
   font-weight:300;line-height:1;
-  color:var(--gold-lt);letter-spacing:-.03em;display:block;
+  color:#fff;/* pure white — maximum contrast on dark overlay */
+  letter-spacing:-.03em;display:block;
 }
 .s-num sup{font-size:.45em;vertical-align:super;letter-spacing:0}
 .s-lbl{
   font-size:.68rem;letter-spacing:2px;text-transform:uppercase;
-  color:rgba(245,216,152,.55);margin-top:4px;display:block;
+  color:rgba(255,255,255,.68);/* white at 68% — clear but softer than numbers */
+  margin-top:4px;display:block;
 }
 
 /* ════════════════════════════════════════════
@@ -851,7 +885,7 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   padding:9px 20px;border:1px solid rgba(28,20,8,.14);border-radius:999px;
   transition:background .2s,border-color .2s,color .2s;cursor:default;
 }
-.who-tag:hover{background:var(--gold);border-color:var(--gold);color:#fff}
+@media(hover:hover){.who-tag:hover{background:var(--gold);border-color:var(--gold);color:#fff}}
 .who-cta{margin-top:40px}
 
 /* ════════════════════════════════════════════
@@ -928,7 +962,7 @@ nav.scrolled .nav-btn:hover{background:rgba(200,136,42,.08)}
   transform:translateX(-130%);transition:transform .75s ease;
 }
 .btn-wa-final:hover::after{transform:translateX(130%)}
-.btn-wa-final:hover{transform:translateY(-2px);box-shadow:0 10px 38px rgba(37,211,102,.46)}
+@media(hover:hover){.btn-wa-final:hover{transform:translateY(-2px);box-shadow:0 10px 38px rgba(37,211,102,.46)}}
 .btn-wa-final:active{transform:scale(.97)}
 .btn-wa-final svg{width:20px;height:20px;flex:0 0 auto}
 
@@ -980,6 +1014,7 @@ footer p+p{margin-top:4px;font-size:.72rem}
   </button>
 </nav>
 
+<main>
 <!-- ════════════════════════════════
      §1  HERO
 ════════════════════════════════ -->
@@ -1033,8 +1068,8 @@ footer p+p{margin-top:4px;font-size:.72rem}
 </section>
 
 <!-- TICKER -->
-<div class="ticker" aria-label="Highlights">
-  <div class="ticker-track" aria-hidden="true">
+<div class="ticker" aria-hidden="true"><!-- purely decorative, SR skips -->
+  <div class="ticker-track">
     <span class="ticker-item"><span class="ticker-dot"></span><strong>500+</strong> Students Trained</span>
     <span class="ticker-item"><span class="ticker-dot"></span> Earn From Your Phone</span>
     <span class="ticker-item"><span class="ticker-dot"></span> No Experience Needed</span>
@@ -1357,6 +1392,7 @@ footer p+p{margin-top:4px;font-size:.72rem}
     <p class="final-note">No experience needed &middot; Free to message &middot; I guide every step</p>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="footer-logo">Rakhshii</div>
@@ -1369,17 +1405,18 @@ footer p+p{margin-top:4px;font-size:.72rem}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
 <script>
-window.__rkh_engine = true;
 (function(){
 'use strict';
 
-/* ── LOADER ───────────────────────────────────────── */
+/* ── LOADER + HERO ENTRANCE ────────────────────────
+   Both tied to window.load so animations NEVER play
+   behind the loader. Hero reveals as loader fades.
+─────────────────────────────────────────────────── */
 window.addEventListener('load',function(){
-  setTimeout(function(){ document.getElementById('loader').classList.add('out'); },800);
-});
+  /* Fade out loader */
+  setTimeout(function(){ document.getElementById('loader').classList.add('out'); },600);
 
-/* ── HERO ENTRANCE — runs 850ms after loader starts ─ */
-setTimeout(function(){
+  /* Hero entrance — starts at same moment as loader fade begins */
   var tag   = document.getElementById('hTag');
   var lines = document.querySelectorAll('.hli');
   var sub   = document.getElementById('hSub');
@@ -1388,13 +1425,13 @@ setTimeout(function(){
   var scrl  = document.getElementById('hScroll');
   if(tag) tag.classList.add('go');
   lines.forEach(function(l,i){
-    setTimeout(function(){ l.classList.add('go'); }, 100 + i*160);
+    setTimeout(function(){ l.classList.add('go'); }, 80 + i*150);
   });
-  setTimeout(function(){ if(sub) sub.classList.add('go'); },500);
-  setTimeout(function(){ if(proof) proof.classList.add('go'); },660);
-  setTimeout(function(){ if(cta) cta.classList.add('go'); },800);
-  setTimeout(function(){ if(scrl) scrl.classList.add('go'); },1100);
-},860);
+  setTimeout(function(){ if(sub)   sub.classList.add('go');   },460);
+  setTimeout(function(){ if(proof) proof.classList.add('go'); },620);
+  setTimeout(function(){ if(cta)   cta.classList.add('go');   },780);
+  setTimeout(function(){ if(scrl)  scrl.classList.add('go');  },1000);
+});
 
 /* ── GSAP SCROLL ANIMATIONS ───────────────────────── */
 if(window.gsap && window.ScrollTrigger){
@@ -1407,8 +1444,8 @@ if(window.gsap && window.ScrollTrigger){
     scrollTrigger:{trigger:'.hero',scrub:true,start:'top top',end:'bottom top'}
   });
 
-  /* Intro image: slow zoom as you scroll past */
-  if(document.getElementById('introImg')){
+  /* Intro image: slow zoom — desktop only (on mobile #introImg is display:none) */
+  if(window.matchMedia('(min-width:840px)').matches && document.getElementById('introImg')){
     gsap.fromTo('#introImg',{scale:1.05},{
       scale:1.0,ease:'none',
       scrollTrigger:{trigger:'.intro-sec',scrub:true,start:'top bottom',end:'bottom top'}
@@ -1525,10 +1562,15 @@ window.addEventListener('scroll',function(){
   });
 },{passive:true});
 
-/* ── WHATSAPP FALLBACK ─────────────────────────────── */
+/* ── WHATSAPP FALLBACK ─────────────────────────────────
+   Runs when engine.js hasn't loaded (engine.js sets
+   window.__rkh_engine = true and handles clicks itself).
+   If engine.js loaded OK, it will stopPropagation/prevent
+   so this listener's btn check won't get a target.
+──────────────────────────────────────────────────────── */
 document.addEventListener('click',function(e){
   var btn=e.target.closest&&e.target.closest('[data-wa="1"]');
-  if(!btn||window.__rkh_engine) return;
+  if(!btn||window.__rkh_engine) return;/* engine.js handles it when present */
   e.preventDefault();
   var num='918082521698';
   var msg=encodeURIComponent('Hi Rakhshii, I want to start earning');
