@@ -17,9 +17,9 @@ const VERSION = 'rkh-v9.0';
 const STATIC_CACHE = 'rkh-static-' + VERSION;
 const STATIC_ASSETS = [
   './engine.js',
-  './assets/hero_mobile.jpeg',
-  './assets/intro_mentor.jpeg',
-  './assets/about_mentor.jpeg',
+  './assets/hero_sunset.jpg',
+  './assets/about_moon.jpg',
+  './assets/trust_beach.jpg',
 ];
 
 // ─── INSTALL ────────────────────────────────────────────────────────────────
