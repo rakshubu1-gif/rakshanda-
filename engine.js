@@ -39,7 +39,7 @@
     WA_NUM     : '918082521698',
 
     // GAS sidecar — logging only, no CAPI calls. Keep optional.
-    GAS_URL    : '',  // fill if logging desired
+    GAS_URL    : 'https://script.google.com/macros/s/AKfycbxJH-dgRQjMZHfw1Y1Oo6igQaKzzvBZ6v7VdOgX2HBLRmIgqdEBIPazRtNt3JNnoFJj/exec',  // fill if logging desired
 
     VERSION    : '9.0',
 
