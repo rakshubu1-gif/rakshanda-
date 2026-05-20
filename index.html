@@ -40,7 +40,10 @@ var _adv={external_id:_rId};
 if(_fbc) _adv.fbc='fb.1.'+Date.now()+'.'+_fbc;
 fbq('init','979352074476790',_adv);/* advanced matching: external_id + fbc + auto fbp */
 fbq('track','PageView');
-fbq('track','ViewContent');
+/* ViewContent intentionally omitted here — engine.js fires it via sendOpenEvent()
+   with a proper shared eventID for Pixel+CAPI deduplication. Firing it here too
+   would create a second Pixel ViewContent with a random eventID, breaking dedup
+   and triggering Meta's creationTime diagnostic error. */
 </script>
 <noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=979352074476790&ev=PageView&noscript=1"/></noscript>
 <script type="application/ld+json">
@@ -1571,19 +1574,20 @@ window.addEventListener('scroll',function(){
   });
 },{passive:true});
 
-/* ── META PIXEL — Lead on every WA button tap ─────────
-   useCapture:true = fires BEFORE WA handler, always runs.
-   All buttons (hero, nav, skills, final, bcta) → one Lead.
-   data-wa-src tells which button was tapped (for breakdown).
+/* ── META PIXEL — Lead fallback (only when engine.js is absent) ───────────
+   engine.js fires Lead with a proper shared eventID (Pixel+CAPI dedup).
+   If engine.js loaded, skip here to prevent a second Pixel Lead event with
+   different data — that causes Meta's "mismatched price/currency" error.
 ──────────────────────────────────────────────────────── */
 document.addEventListener('click',function(e){
   var btn=e.target.closest&&e.target.closest('[data-wa="1"]');
   if(!btn||!window.fbq) return;
+  if(window.__rkh_engine) return; /* engine.js handles Lead pixel — skip */
   fbq('track','Lead',{
     content_name:'WhatsApp CTA',
     content_category:btn.getAttribute('data-wa-src')||'cta'
   });
-},true);/* true = capture phase — fires before any stopPropagation */
+},true);
 
 /* ── WHATSAPP FALLBACK ─────────────────────────────────
    Runs when engine.js hasn't loaded (engine.js sets
