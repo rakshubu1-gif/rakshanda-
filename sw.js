@@ -1,5 +1,5 @@
 /* ╔══════════════════════════════════════════════════════════════════════════
- * ║  RAKHSHII — SERVICE WORKER v9.2
+ * ║  RAKHSHII — SERVICE WORKER v9.3
  * ║
  * ║  Two jobs:
  * ║   1. Offline retry queue — engine.js posts failed CAPI events here
@@ -13,13 +13,14 @@
  * ║  fresh. Only static assets are cached.
  * ╚══════════════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'rkh-v9.2';
+const VERSION = 'rkh-v9.3';
 const STATIC_CACHE = 'rkh-static-' + VERSION;
 const STATIC_ASSETS = [
   './engine.js',
   './assets/hero_sunset.jpg',
   './assets/about_moon.jpg',
   './assets/trust_beach.jpg',
+  './assets/final_silhouette.jpg',
 ];
 
 // ─── INSTALL ────────────────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(STATIC_CACHE).then((c) => c.put(req, copy)).catch(() => {});
         }
         return res;
-      }).catch(() => hit))
+      }).catch(() => hit || new Response('', { status: 503 })))
     );
     return;
   }
