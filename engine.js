@@ -1,5 +1,5 @@
 /* ╔══════════════════════════════════════════════════════════════════════════
- * ║  RAKHSHII — SIGNAL INTELLIGENCE ENGINE v9.2 (mobile-first, FB/IG ads)
+ * ║  RAKHSHII — SIGNAL INTELLIGENCE ENGINE v9.3 (mobile-first, FB/IG ads)
  * ║
  * ║  Improvements over Asma's v8.1:
  * ║   #1  Cloudflare Worker endpoint (30-50ms vs GAS 1500-2000ms)
@@ -39,9 +39,9 @@
     WA_NUM     : '918082521698',
 
     // GAS sidecar — logging only, no CAPI calls. Keep optional.
-    GAS_URL    : 'https://script.google.com/macros/s/AKfycbxJH-dgRQjMZHfw1Y1Oo6igQaKzzvBZ6v7VdOgX2HBLRmIgqdEBIPazRtNt3JNnoFJj/exec',  // fill if logging desired
+    GAS_URL    : 'https://script.google.com/macros/s/AKfycby-W3tNKjRXnzL3y0LBGloxFziowMHtYEVMtNuZlZ_HYGw6vZrsX98Snx4fiWCBwKz4/exec',
 
-    VERSION    : '9.2',
+    VERSION    : '9.3',
 
     TIER_HIGH : 65, TIER_MED : 40, TIER_LOW : 12,
     HIGH_TESTI_S : 12, HIGH_HESIT_MIN : 500, HIGH_HESIT_MAX : 10000,
@@ -492,55 +492,6 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  //  REVEAL + NAV scroll state
-  // ═══════════════════════════════════════════════════════════════════
-  function initRevealOnView() {
-    var els = document.querySelectorAll('.rv');
-    if ('IntersectionObserver' in window) {
-      var o = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          if (e.isIntersecting) { e.target.classList.add('on'); o.unobserve(e.target); }
-        });
-      }, { threshold: 0.06, rootMargin: '0px 0px -20px 0px' });
-      els.forEach(function (el) { o.observe(el); });
-    } else {
-      els.forEach(function (el) { el.classList.add('on'); });
-    }
-  }
-
-  function initNavScroll() {
-    var nav = document.getElementById('nav');
-    if (!nav) return;
-    addEventListener('scroll', function () {
-      nav.classList.toggle('scrolled', scrollY > 30);
-    }, { passive: true });
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  //  BOTTOM STICKY CTA — show after first scroll, hide on scroll-up
-  //  (TikTok-style pattern)
-  // ═══════════════════════════════════════════════════════════════════
-  function initBottomCTA() {
-    var bcta = document.getElementById('bcta');
-    if (!bcta) return;
-    var lastY = 0, ticking = false;
-    addEventListener('scroll', function () {
-      if (ticking) return; ticking = true;
-      requestAnimationFrame(function () {
-        var y = scrollY;
-        if (y > CFG.BCTA_SHOW_PX) {
-          // Show on scroll-down, hide on quick scroll-up (>10px in one frame)
-          if (y - lastY > 0)               bcta.classList.add('show');
-          else if (lastY - y > 12)         bcta.classList.remove('show');
-        } else {
-          bcta.classList.remove('show');
-        }
-        lastY = y; ticking = false;
-      });
-    }, { passive: true });
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
   //  BUTTON BINDINGS — touchend + click + keydown (mobile-first)
   // ═══════════════════════════════════════════════════════════════════
   function initButtonBindings() {
@@ -587,16 +538,24 @@
     var num = CFG.WA_NUM;
     var plat = getPlatform();
 
-    // Android with Chrome custom-tabs / IG in-app: intent:// is most reliable
+    var fallback = 'https://wa.me/' + num + '?text=' + msg;
+
+    // Android: intent:// opens WhatsApp directly. If WA not installed,
+    // intent silently fails — add 800ms timer as fallback to wa.me.
     if (plat === 'android') {
       var intent = 'intent://send?phone=' + num + '&text=' + msg
                  + '#Intent;scheme=whatsapp;package=com.whatsapp;end';
-      try { location.href = intent; return; } catch (_) {}
+      var tA = setTimeout(function () { location.href = fallback; }, 800);
+      addEventListener('blur', function onceA() {
+        clearTimeout(tA);
+        removeEventListener('blur', onceA);
+      }, { once: true });
+      try { location.href = intent; } catch (_) { clearTimeout(tA); location.href = fallback; }
+      return;
     }
 
     // iOS / others: whatsapp:// scheme first; if fails, fall back to wa.me after 700ms
     var deep = 'whatsapp://send?phone=' + num + '&text=' + msg;
-    var fallback = 'https://wa.me/' + num + '?text=' + msg;
     var t = setTimeout(function () { location.href = fallback; }, 700);
     addEventListener('blur', function once() {
       clearTimeout(t);
