@@ -1,5 +1,5 @@
 /* ╔══════════════════════════════════════════════════════════════════════════
- * ║  RAKHSHII — SIGNAL INTELLIGENCE ENGINE v9.0 (mobile-first, FB/IG ads)
+ * ║  RAKHSHII — SIGNAL INTELLIGENCE ENGINE v9.2 (mobile-first, FB/IG ads)
  * ║
  * ║  Improvements over Asma's v8.1:
  * ║   #1  Cloudflare Worker endpoint (30-50ms vs GAS 1500-2000ms)
@@ -41,7 +41,7 @@
     // GAS sidecar — logging only, no CAPI calls. Keep optional.
     GAS_URL    : 'https://script.google.com/macros/s/AKfycbxJH-dgRQjMZHfw1Y1Oo6igQaKzzvBZ6v7VdOgX2HBLRmIgqdEBIPazRtNt3JNnoFJj/exec',  // fill if logging desired
 
-    VERSION    : '9.0',
+    VERSION    : '9.2',
 
     TIER_HIGH : 65, TIER_MED : 40, TIER_LOW : 12,
     HIGH_TESTI_S : 12, HIGH_HESIT_MIN : 500, HIGH_HESIT_MAX : 10000,
@@ -234,8 +234,6 @@
       return Math.round(raw * 100);
     },
 
-    toValue: function (s) { return Math.round(CFG.VALUE_MIN + (CFG.VALUE_MAX - CFG.VALUE_MIN) * (s / 100)); },
-
     loadHistory: function () {
       var h = lsGet('rkh_sh'); if (!h) return;
       this.prevBest = h.best || 0; STATE.prevBest = h.best || 0;
@@ -272,20 +270,6 @@
       var buf = new TextEncoder().encode(s.trim().toLowerCase());
       var hash = await crypto.subtle.digest('SHA-256', buf);
       return Array.from(new Uint8Array(hash))
-        .map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
-    } catch (_) { return ''; }
-  }
-
-  // HMAC-SHA256 hex (used to sign Worker payloads)
-  async function hmacHex(secret, data) {
-    if (!window.crypto || !window.crypto.subtle) return '';
-    try {
-      var key = await crypto.subtle.importKey(
-        'raw', new TextEncoder().encode(secret),
-        { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-      );
-      var sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
-      return Array.from(new Uint8Array(sig))
         .map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
     } catch (_) { return ''; }
   }
@@ -344,9 +328,8 @@
     initCopyDetection();
     initExitIntent();
     initButtonBindings();
-    initBottomCTA();
-    initRevealOnView();
-    initNavScroll();
+    // initBottomCTA / initRevealOnView / initNavScroll removed —
+    // index.html already handles these; running both caused conflicts.
     sendOpenEvent();
 
     if (window.console && console.log) {
@@ -377,24 +360,18 @@
       }).catch(function () {});
   }
 
-  // Live counter — KV-backed real number, not fake
+  // Live counter — KV-backed real number. Targets any [data-live-count] element.
   function fetchLiveCount() {
-    var el = document.getElementById('live-text');
+    var el = document.querySelector('[data-live-count]') || document.getElementById('live-text');
     if (!el || !CFG.WORKER_URL) return;
     fetch(CFG.WORKER_URL + '/stats', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d && typeof d.today === 'number' && d.today > 0) {
           el.textContent = 'Aaj ' + d.today + ' logon ne join kiya';
-        } else {
-          // Sensible fallback while KV warms up
-          el.textContent = '500+ already started';
         }
       })
-      .catch(function () {
-        var el2 = document.getElementById('live-text');
-        if (el2) el2.textContent = '500+ already started';
-      });
+      .catch(function () {});
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -446,14 +423,18 @@
 
   function initSectionTracking() {
     if (!('IntersectionObserver' in window)) return;
+    // Uses CSS class selectors so no id="" changes needed in HTML.
+    // Previously used IDs that don't exist → sections score was always 0.
     var sections = [
-      { id:'intro', weight:1.5 }, { id:'trust', weight:2.0 },
-      { id:'learn', weight:2.5 }, { id:'testi', weight:2.5 },
-      { id:'about', weight:1.5 }, { id:'final', weight:2.5 },
+      { id:'s-intro',   sel:'.intro-sec',    weight:1.5 },
+      { id:'s-skills',  sel:'.skills-mobile', weight:2.0 },
+      { id:'s-testi',   sel:'.testi-sec',    weight:2.5 },
+      { id:'s-mission', sel:'.mission-sec',  weight:1.5 },
+      { id:'s-final',   sel:'#final',        weight:2.5 },
     ];
     var totalW = sections.reduce(function (a, s) { return a + s.weight; }, 0);
     sections.forEach(function (sec) {
-      var el = document.getElementById(sec.id); if (!el) return;
+      var el = document.querySelector(sec.sel); if (!el) return;
       new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {
           var sd = STATE.sectionDwellMap[sec.id] = STATE.sectionDwellMap[sec.id] || { totalS:0, enterMs:0 };
@@ -461,7 +442,7 @@
           else if (sd.enterMs) {
             sd.totalS += (Date.now() - sd.enterMs) / 1000;
             sd.enterMs = 0;
-            if (sec.id === 'testi') STATE.testiDwellS = sd.totalS;
+            if (sec.id === 's-testi') STATE.testiDwellS = sd.totalS;
             if (STATE.sectionsViewed.indexOf(sec.id) === -1) STATE.sectionsViewed.push(sec.id);
             var seenW = 0;
             STATE.sectionsViewed.forEach(function (sid) {
@@ -636,7 +617,6 @@
     if (STATE.hoverStartMs > 0) STATE.hesitationMs = Date.now() - STATE.hoverStartMs;
 
     var score   = SCORE.compute();
-    var value   = SCORE.toValue(score);
     var clickTs = Date.now();
     var tier    = tierFromScore(score);
     SCORE.saveHistory(score);
@@ -651,9 +631,12 @@
     var idSeed = IDENTITY.fingerprint + '|' + clickTs + '|Lead';
     var eventId = (await sha256Hex(idSeed)).substring(0, 32) || uuid4();
 
-    // 1) Meta Pixel — ONE Lead event with shared eventID
+    // 1) Meta Pixel — ONE Lead event with shared eventID.
+    // No value/currency: Lead gen events (WhatsApp redirect) have no real
+    // transaction value. Omitting both here AND in CAPI prevents Meta's
+    // "mismatched price and currency" diagnostic error.
     try {
-      fbq('track', 'Lead', { value: value, currency: 'INR', eventID: eventId });
+      fbq('track', 'Lead', { eventID: eventId });
     } catch (_) {}
 
     // 2) CAPI via Cloudflare Worker — same eventId, full payload
@@ -711,6 +694,7 @@
       copy_detected : STATE.copyDetected,
       lead_score : SCORE.compute(),
       bot_score_client : IDENTITY.botScore(),
+      is_bot_likely    : IDENTITY.isBotLikely(),
       is_in_app : isInAppBrowser(),
       testimonials_dwell_s : STATE.testiDwellS,
       hesitation_ms : STATE.hesitationMs,
