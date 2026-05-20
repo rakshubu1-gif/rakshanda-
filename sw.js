@@ -1,5 +1,5 @@
 /* ╔══════════════════════════════════════════════════════════════════════════
- * ║  RAKHSHII — SERVICE WORKER v9.0
+ * ║  RAKHSHII — SERVICE WORKER v9.2
  * ║
  * ║  Two jobs:
  * ║   1. Offline retry queue — engine.js posts failed CAPI events here
@@ -13,7 +13,7 @@
  * ║  fresh. Only static assets are cached.
  * ╚══════════════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'rkh-v9.0';
+const VERSION = 'rkh-v9.2';
 const STATIC_CACHE = 'rkh-static-' + VERSION;
 const STATIC_ASSETS = [
   './engine.js',
